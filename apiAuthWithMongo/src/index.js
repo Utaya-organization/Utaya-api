@@ -4,9 +4,31 @@ import cors from "cors";
 import userRoute from "./routes/userRoute.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import loadModel from "../services/loadModel.js";
 
 
+const initModel = async () => {
+    try {
+        const model = await loadModel();
+        app.locals.model = model;
+        console.log('Model berhasil dimuat dan disimpan di app.locals');
+    } catch (error) {
+        console.error('Gagal memuat model:', error);
+    }
+};
 
+initModel();
+
+app.get('/predict', async (req, res) => {
+    if (!app.locals.model) {
+        return res.status(500).send('Model belum dimuat');
+    }
+
+    // Logika prediksi akan ditambahkan di sini
+    // const prediction = app.locals.model.predict(tensor);
+
+    res.send('Prediction result');
+});
 
 dotenv.config();
 

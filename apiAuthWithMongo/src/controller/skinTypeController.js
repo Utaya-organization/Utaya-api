@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Storage } from "@google-cloud/storage";
 import admin from 'firebase-admin';
+import predictClassification from '../../services/inferenceService.js';
 
 admin.initializeApp();
 
@@ -481,10 +482,12 @@ export const deleteUser = async (req, res) => {
 export const addHistory = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
     if(!refreshToken) return res.sendStatus(403);
-
+    const image = req.file
+    // const {}
     try {
         const usersRef = await admin.firestore().collection('users');
         const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+        // const {label} = await predictClassification {image, model}
 
         if (snapshot.empty) {
             res.status(404).json({ message: 'No matching documents.' });
@@ -506,10 +509,7 @@ export const addHistory = async (req, res) => {
             await userDocRef.update({
                 history: admin.firestore.FieldValue.arrayUnion({
                     id: db.collection('users').doc().id,
-                    nameProduct: 'biore',
-                    urlArticle: 'https://www.google.co.id/?hl=id',
-                    urlImage: 'https://www.google.co.id/?hl=id',
-                    urlProduct: 'https://www.google.co.id/?hl=id'
+                    // skinType: label,
                 })
             });
             res.status(200).json({message: 'success'});
