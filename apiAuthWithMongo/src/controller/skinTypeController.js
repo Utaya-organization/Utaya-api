@@ -1,7 +1,11 @@
 import SkinType from '../models/skinTypeModel.js';
 import Firestore from '@google-cloud/firestore';
-import admin from 'firebase-admin';
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { Storage } from "@google-cloud/storage";
+import admin from 'firebase-admin';
+
+admin.initializeApp();
 
 const storage = new Storage();
 const bucketName = 'utaya-bucket'
@@ -9,12 +13,14 @@ const bucket = storage.bucket(bucketName)
 
 
 
-admin.initializeApp();
+
 
 const db = new Firestore();
 
 
 export const getSkinType = async (req, res) => {
+
+
     try {
         // Mendapatkan semua dokumen dari koleksi 'skinTypes'
         const snapshot = await admin.firestore().collection('skinTypes').get();
@@ -90,31 +96,8 @@ export const storeSkinType = async (req, res) => {
     // End the blob stream with the file buffer
     blobstream.end(file.buffer);
 
-    // const refreshToken = req.cookies.refreshToken;
-    // if(!refreshToken) return res.sendStatus(403);
-
-    // const { skinType, productName, urlArticle, urlImage, urlProduct } = req.body;
-
-    // const dataSkinType = new SkinType({
-    //     skinType,
-    //     recomendations: {
-    //         productName, 
-    //         urlArticle,
-    //         urlImage, 
-    //         urlProduct,
-    //     }
-    // });
-
-    // try {
-    //     const skintype = await dataSkinType.save();
-    //     res.status(201).json(skintype);
-    // } catch (error) {
-    //     console.log(error);
-    // }
+    
 };
-
-
-
 
 export const storeProduct = async (req, res) => {
 
@@ -162,6 +145,7 @@ export const storeProduct = async (req, res) => {
     try {
         // Mendefinisikan referensi dokumen dalam koleksi 'skinTypes' berdasarkan ID `skinType`
         const skinTypeDocRef = db.collection('skinTypes').doc(skinType);
+        
 
         // Menambahkan data baru ke dalam bidang recommendations yang sudah ada, tanpa menggantinya
         await skinTypeDocRef.update({
@@ -183,39 +167,7 @@ export const storeProduct = async (req, res) => {
 })
 blobstream.end(file.buffer);
 
-    // const refreshToken = req.cookies.refreshToken;
-    // if(!refreshToken) return res.sendStatus(403);
-
-    // const { skinType, productName, urlArticle, urlImage, urlProduct } = req.body;
-
-    // if(skinType === undefined || productName === undefined || urlArticle === undefined || urlImage === undefined || urlProduct === undefined)
-    //     {
-    //     res.status(400).json({
-    //         message: {
-    //             skinType: "require",
-    //             productName: "require",
-    //             urlArticle: "require",
-    //             urlImage: "require",
-    //             urlProduct: "require"
-    //         }
-    //     });
-    //     return;
-    // }
-
-    // try {
-    //     const skintype = await SkinType.find({skinType: skinType});
-    //     skintype[0].recomendations.push({
-    //        productName,
-    //        urlArticle,
-    //        urlImage,
-    //        urlProduct
-    //     });
-    //     await skintype[0].save();
-    //     res.status(201).json(skintype);
-    // } catch (error) {
-    //     console.log(error);
-    // }
-
+  
 
 }
 
@@ -269,5 +221,302 @@ export const destroyProduct = async (req, res) => {
     } catch (error) {
         console.error('Error deleting product from recommendations:', error);
         res.status(500).send('Internal Server Error');
+    }
+}
+
+
+export const getUserLogin = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
+  
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No matching documents.' });
+            return;
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username
+            });
+        });
+
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Error getting documents', error });
+    }
+}
+
+export const registerUser = async (req, res) => {
+    const { username, password, confirmPassword } = req.body;
+
+    //check field
+    if(username === undefined || password === undefined || confirmPassword === undefined) {
+        res.status(400).json({
+            message: {
+                username: "require",
+                password: "require",
+                confirmPassword: "require"
+            }
+        });
+        return;
+    }
+
+    //check confirm password
+    if(password !== confirmPassword ) {
+        res.status(400).json({
+            message: "password and confirm password not the same"
+        });
+        return;
+    }
+    const userCollection = db.collection('users');
+    const userDocRef = userCollection.doc(username);
+
+    const user = await admin.firestore().collection('users').doc(username).get();
+    if(user.data() !== undefined) return res.status(400).json({message: 'username alredy exists'})
+    
+
+    const isAdmin = false;
+    const isDelete = false;
+    const createdAt = new Date().toISOString();
+    const updatedAt = createdAt;
+    const deletedAt = null;
+    const refreshToken = null;
+
+     //password hash
+    const salt = await bcrypt.genSalt();
+    const hashPassword = await bcrypt.hash(password, salt);
+
+    try {
+        await userDocRef.set({
+            username,
+            password: hashPassword,
+            refreshToken,
+            isAdmin,
+            isDelete,
+            createdAt,
+            updatedAt,
+            deletedAt,
+            history: [],
+        });
+        res.sendStatus(201);
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export const loginUser = async (req, res) => {
+    const { username, password } = req.body;
+    if(username === undefined || password === undefined) return res.status(400).json({message: {username: "require", password: "require"}});
+    const user = await admin.firestore().collection('users').doc(username).get();
+    const isDelete = user.data().isDelete;
+    
+    if(isDelete) return res.status(403).json({message: 'your account has been deleted'});
+    if(user.data() === undefined) return res.status(404).json({message: 'username not found'});
+    const match = await bcrypt.compare(password, user.data().password);
+    if(!match) return res.status(404).json({message: 'wrong password'});
+
+    const userName = user.data().username;
+    const accessToken = jwt.sign({userName}, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '1d'
+    });
+    const refreshToken = jwt.sign({userName}, process.env.REFRESH_TOKEN_SECRET,{
+        expiresIn: '1d'
+    });
+    const userDocRef = db.collection('users').doc(username);
+    try {
+        await userDocRef.update({
+            refreshToken
+        });
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        res.json({accessToken});
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export const updatePassword = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
+    const { password, newPassword, confirmNewPassword } = req.body;
+    if(password === undefined || newPassword === undefined || confirmNewPassword === undefined) return res.status(400).json({message: {password: "require", newPassword: "require", confirmNewPassword: "require"}});
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No matching documents.' });
+            return;
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username,
+                password: doc.data().password
+            });
+        });
+
+        const userName = user[0].username;
+        const match = await bcrypt.compare(password, user[0].password);
+
+        if(!match) return res.status(400).json({message: 'wrong password'});
+
+        const confirmMatch = newPassword == confirmNewPassword;
+
+        if(!confirmMatch) return res.status(400).json({message: 'password not the same'});
+
+        const salt = await bcrypt.genSalt();
+        const hashPassword = await bcrypt.hash(newPassword, salt);
+        const updatedAt = new Date().toISOString();
+
+        const userDocRef = db.collection('users').doc(userName);
+
+        try {
+            await userDocRef.update({
+                password: hashPassword,
+                updatedAt
+            });
+            res.status(200).json({message: 'password has been updated'});
+        } catch (error) {
+            console.log(error);
+        }
+    
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error getting documents', error });
+    }
+}
+
+export const logoutUser = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(204);
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No matching documents.' });
+            return;
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username
+            });
+        });
+
+        const userName = user[0].username;
+        const userDocRef = db.collection('users').doc(userName);
+        try {
+            await userDocRef.update({
+                refreshToken: null
+            });
+            res.clearCookie('refreshToken');
+            res.status(200).json({message: 'logout success'});
+        } catch (error) {
+            console.log(error);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export const deleteUser = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(204);
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No matching documents.' });
+            return;
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username,
+                password: doc.data().password
+            });
+        });
+
+        const userName = user[0].username;
+        const deletedAt = new Date().toISOString();
+        const userDocRef = db.collection('users').doc(userName);
+
+        try {
+            await userDocRef.update({
+                isDelete: true,
+                deletedAt,
+                refreshToken: null
+            });
+            res.clearCookie('refreshToken');
+            res.status(200).json({meassage: "account has been deleted"});
+        } catch (error) {
+            console.log(error);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export const addHistory = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No matching documents.' });
+            return;
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username,
+                password: doc.data().password
+            });
+        });
+
+        const userName = user[0].username;
+        const userDocRef = db.collection('users').doc(userName);
+         try {
+            await userDocRef.update({
+                history: admin.firestore.FieldValue.arrayUnion({
+                    id: db.collection('users').doc().id,
+                    nameProduct: 'biore',
+                    urlArticle: 'https://www.google.co.id/?hl=id',
+                    urlImage: 'https://www.google.co.id/?hl=id',
+                    urlProduct: 'https://www.google.co.id/?hl=id'
+                })
+            });
+            res.status(200).json({message: 'success'});
+         } catch (error) {
+            
+         }
+    } catch (error) {
+        
     }
 }

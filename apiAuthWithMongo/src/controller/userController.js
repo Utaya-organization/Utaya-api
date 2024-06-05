@@ -1,9 +1,13 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import Firestore from '@google-cloud/firestore';
 
 
-export const getUserLogin = async (req, res) => {
+const db = new Firestore();
+
+
+export const GetUserLogin = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
     if(!refreshToken) return res.sendStatus(403);
     const user = await User.find({refreshToken: refreshToken}).select({username: 1});
@@ -26,50 +30,54 @@ export const storeUsers = async (req, res) => {
         return;
     }
 
-    //check username uniq
-    const checkUsername = await User.find({username: username});
-    if(checkUsername[0] !== undefined) {
-        res.status(400).json({
-            message: "username alredy exists"
-        });
-        return;
-    }
 
-    //check confirm password
-    if(password !== confirmPassword ) {
-        res.status(400).json({
-            message: "password and confirm password not the same"
-        });
-        return;
-    }
-    const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
-    const deletedAt = null;
-    const refreshToken = null;
+
+
+
+    // //check username uniq
+    // const checkUsername = await User.find({username: username});
+    // if(checkUsername[0] !== undefined) {
+    //     res.status(400).json({
+    //         message: "username alredy exists"
+    //     });
+    //     return;
+    // }
+
+    // //check confirm password
+    // if(password !== confirmPassword ) {
+    //     res.status(400).json({
+    //         message: "password and confirm password not the same"
+    //     });
+    //     return;
+    // }
+    // const createdAt = new Date().toISOString();
+    // const updatedAt = createdAt;
+    // const deletedAt = null;
+    // const refreshToken = null;
     
 
-    //password hash
-    const salt = await bcrypt.genSalt();
-    const hashPassword = await bcrypt.hash(password, salt);
+    // //password hash
+    // const salt = await bcrypt.genSalt();
+    // const hashPassword = await bcrypt.hash(password, salt);
     
-    const user = new User({
-        username, 
-        password: hashPassword, 
-        refreshToken,
-        createdAt, 
-        updatedAt,
-        deletedAt
-    });
+    // const user = new User({
+    //     username, 
+    //     password: hashPassword, 
+    //     refreshToken,
+    //     createdAt, 
+    //     updatedAt,
+    //     deletedAt
+    // });
    
-    try {
-        const saveUser = await user.save();
-        res.status(201).json(saveUser);
-    } catch (error) {
-        res.status(400).json({meassage: error.meassage});
-    }
+    // try {
+    //     const saveUser = await user.save();
+    //     res.status(201).json(saveUser);
+    // } catch (error) {
+    //     res.status(400).json({meassage: error.meassage});
+    // }
 }
 
-export const loginUsers = async (req, res) => {
+export const LoginUsers = async (req, res) => {
     const { username, password } = req.body;
     const user = await User.find({username: username});
 
@@ -107,7 +115,7 @@ export const loginUsers = async (req, res) => {
 
 }
 
-export const updatePassword = async (req, res) => {
+export const UpdatePassword = async (req, res) => {
     const { password, newPassword, confirmNewPassword } = req.body;
     if(password === undefined || newPassword === undefined || confirmNewPassword === undefined) return res.status(400).json({message: {password: "require", newPassword: "require", confirmNewPassword: "require"}});
     const refreshToken = req.cookies.refreshToken;
