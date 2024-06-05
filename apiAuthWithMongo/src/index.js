@@ -7,17 +7,19 @@ import dotenv from "dotenv";
 import loadModel from "../services/loadModel.js";
 
 
-const initModel = async () => {
-    try {
-        const model = await loadModel();
-        app.locals.model = model;
-        console.log('Model berhasil dimuat dan disimpan di app.locals');
-    } catch (error) {
-        console.error('Gagal memuat model:', error);
-    }
-};
 
-initModel();
+const app = express();
+// const initModel = async () => {
+//     try {
+//         const model = await loadModel();
+//         app.locals.model = model;
+//         console.log(model);
+//     } catch (error) {
+//         console.error('Gagal memuat model:', error);
+//     }
+// };
+
+// initModel();
 
 app.get('/predict', async (req, res) => {
     if (!app.locals.model) {
@@ -35,15 +37,6 @@ dotenv.config();
 
 
   
-const app = express();
-mongoose.connect('mongodb://localhost:27017/tesApi', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
-
-const db = mongoose.connection;
-db.on('error', (error) => console.log(error));
-db.once('open', ()=> console.log('conect'));
 
 app.use(express.json());
 

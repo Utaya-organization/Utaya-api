@@ -25,7 +25,7 @@ router.get('/skintype', getSkinType);
 router.post('/skintype', upload.single('file'), storeSkinType);
 router.post('/product', upload.single('file'), storeProduct);
 router.delete('/product/:skinTypeName/:idProduct', destroyProduct);
-router.post('/predict', Auth, addHistory);
+router.post('/predict', upload.single('image'), addHistory);
 
 
 export default router;

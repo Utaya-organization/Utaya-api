@@ -1,10 +1,14 @@
-import SkinType from '../models/skinTypeModel.js';
+
 import Firestore from '@google-cloud/firestore';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Storage } from "@google-cloud/storage";
 import admin from 'firebase-admin';
 import predictClassification from '../../services/inferenceService.js';
+import express from "express";
+import fs from "fs";
+import loadModel from "../../services/loadModel.js";
+const app = express();
 
 admin.initializeApp();
 
@@ -480,9 +484,26 @@ export const deleteUser = async (req, res) => {
 }
 
 export const addHistory = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if(!refreshToken) return res.sendStatus(403);
-    const image = req.file
+    // const refreshToken = req.cookies.refreshToken;
+    // if(!refreshToken) return res.sendStatus(403);
+
+    const initModel = async () => {
+        try {
+            const model = await loadModel();
+            app.locals.model = model;
+            const image = req.file.buffer;
+            const {label, score} = await predictClassification(model, image);
+            console.log(label);
+        } catch (error) {
+            console.error('Gagal memuat model:', error);
+        }
+    };
+    
+    initModel();
+
+  
+    return;
+   
     // const {}
     try {
         const usersRef = await admin.firestore().collection('users');

@@ -1,6 +1,6 @@
-const tf = require('@tensorflow/tfjs-node');
+import tf from "@tensorflow/tfjs-node"
 async function loadModel() {
-    return tf.loadGraphModel("../model/model.json");
+    return tf.loadGraphModel("https://storage.googleapis.com/serta-mulia-valent-bucket/model-in-prod/model.json");
 }
 
-module.exports = loadModel;
+export default loadModel;
