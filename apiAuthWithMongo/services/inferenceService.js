@@ -13,7 +13,7 @@ async function predictClassification(model, image) {
  
   const prediction = model.predict(tensor);
  
-  const classes = ['Kering', 'Basah', 'Berminyak'];
+  const classes = ['kering', 'basah', 'berminyak'];
  
   const classResult = tf.argMax(prediction, 1).dataSync()[0];
   const label = classes[classResult];

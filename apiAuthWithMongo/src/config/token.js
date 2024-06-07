@@ -1,0 +1,2 @@
+export const ACCESS_TOKEN_SECRET = "fsnmdfuiafn8s7fwr89wr937r78whrw9r7g368wrgw837rg3w678rfgw8rwrsvnogn";
+export const REFRESH_TOKEN_SECRET = "uunasfiun8q3737n0d08rtyw73bnnasb8fa98mfinafoubnaanfoin89f83934983";

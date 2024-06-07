@@ -8,12 +8,13 @@ import predictClassification from '../../services/inferenceService.js';
 import express from "express";
 import fs from "fs";
 import loadModel from "../../services/loadModel.js";
+import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from '../config/token.js';
 const app = express();
 
 admin.initializeApp();
 
 const storage = new Storage();
-const bucketName = 'utaya-bucket'
+const bucketName = 'utaya-bucket-capstone'
 const bucket = storage.bucket(bucketName)
 
 
@@ -51,6 +52,15 @@ export const storeSkinType = async (req, res) => {
     const { skinType, productName, urlArticle, urlProduct } = req.body;
     const file = req.file; // Mengambil file gambar dari permintaan
 
+    if(skinType === undefined || productName === undefined || urlArticle === undefined || urlProduct === undefined || file === undefined) return res.status(400).json({
+        meassage: {
+            skinType: 'require',
+            productName: 'require',
+            urlArticle: 'require',
+            urlProduct: 'require',
+            file: 'require'
+        }
+    }); 
     const skinTypesCollection = db.collection('skinTypes');
     const skinTypeDocRef = skinTypesCollection.doc(skinType);
 
@@ -308,7 +318,7 @@ export const registerUser = async (req, res) => {
             createdAt,
             updatedAt,
             deletedAt,
-            history: [],
+            history: {}
         });
         res.sendStatus(201);
     } catch (error) {
@@ -328,10 +338,10 @@ export const loginUser = async (req, res) => {
     if(!match) return res.status(404).json({message: 'wrong password'});
 
     const userName = user.data().username;
-    const accessToken = jwt.sign({userName}, process.env.ACCESS_TOKEN_SECRET, {
+    const accessToken = jwt.sign({userName}, ACCESS_TOKEN_SECRET, {
         expiresIn: '1d'
     });
-    const refreshToken = jwt.sign({userName}, process.env.REFRESH_TOKEN_SECRET,{
+    const refreshToken = jwt.sign({userName}, REFRESH_TOKEN_SECRET,{
         expiresIn: '1d'
     });
     const userDocRef = db.collection('users').doc(username);
@@ -484,16 +494,68 @@ export const deleteUser = async (req, res) => {
 }
 
 export const addHistory = async (req, res) => {
-    // const refreshToken = req.cookies.refreshToken;
-    // if(!refreshToken) return res.sendStatus(403);
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
 
     const initModel = async () => {
         try {
             const model = await loadModel();
             app.locals.model = model;
             const image = req.file.buffer;
-            const {label, score} = await predictClassification(model, image);
-            console.log(label);
+            const {label } = await predictClassification(model, image);
+
+            try {
+                const usersRef = await admin.firestore().collection('users');
+                const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+               
+                const skinTypeDocRef = await admin.firestore().collection('skinTypes').doc(label).get();
+                const recommendations = skinTypeDocRef.data().recommendations;
+              
+               
+                    
+                  
+                    
+                    if (snapshot.empty) {
+                        res.status(404).json({ message: 'No matching documents.' });
+                        return;
+                    }
+            
+                    const user = [];
+                    snapshot.forEach(doc => {
+                        user.push({
+                            id: doc.id,
+                            username: doc.data().username,
+                            password: doc.data().password
+                        });
+                    });
+            
+                    const userName = user[0].username;
+                  
+                    const userDocRef = db.collection('users').doc(userName);
+                     try {
+                        await userDocRef.update({
+                            history: admin.firestore.FieldValue.arrayUnion({
+                                id: db.collection('users').doc().id,
+                                skinType: label,
+                                recommendations: recommendations
+                            })
+                        });
+                        res.status(200).json({message: 'success'});
+                     } catch (error) {
+                        
+                     }
+               
+
+
+                console.log(label)
+                return
+                
+               
+        
+            } catch (error) {
+                
+            }
         } catch (error) {
             console.error('Gagal memuat model:', error);
         }
@@ -505,10 +567,17 @@ export const addHistory = async (req, res) => {
     return;
    
     // const {}
+    
+}
+
+export const getHistory = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
+
     try {
+
         const usersRef = await admin.firestore().collection('users');
         const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
-        // const {label} = await predictClassification {image, model}
 
         if (snapshot.empty) {
             res.status(404).json({ message: 'No matching documents.' });
@@ -519,25 +588,19 @@ export const addHistory = async (req, res) => {
         snapshot.forEach(doc => {
             user.push({
                 id: doc.id,
-                username: doc.data().username,
-                password: doc.data().password
+                username: doc.data().username
             });
         });
 
-        const userName = user[0].username;
-        const userDocRef = db.collection('users').doc(userName);
-         try {
-            await userDocRef.update({
-                history: admin.firestore.FieldValue.arrayUnion({
-                    id: db.collection('users').doc().id,
-                    // skinType: label,
-                })
-            });
-            res.status(200).json({message: 'success'});
-         } catch (error) {
-            
-         }
-    } catch (error) {
+        const userDocRef = await admin.firestore().collection('users').doc(user[0].username).get();
+        const historys = userDocRef.data().history;
+        historys.forEach(history => {
+
+            res.status(200).json({history:history})
+        });
         
+        
+    } catch (error) {
+        console.log(error)
     }
 }
