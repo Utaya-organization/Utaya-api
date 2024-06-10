@@ -20,14 +20,16 @@ router.put('/users', Auth, updatePassword);
 router.delete('/logout', Auth, logoutUser);
 router.delete('/users', Auth, deleteUser);
 router.get('/token', refreshToken);
-// router.get('/allusers', Auth, isAdmin, getAllUsers);
+
 
 router.get('/skintype', getSkinType);
 router.post('/skintype', upload.single('file'), storeSkinType);
 router.post('/product', upload.single('file'), storeProduct);
 router.delete('/product/:skinTypeName/:idProduct', destroyProduct);
-router.post('/predict', Auth,upload.single('image'), addHistory);
+// router.post('/predict', upload.single('image'), addHistory);
+router.post('/history/:skinType', Auth,addHistory);
 router.get('/history', Auth, getHistory);
+// router.post('/predict', upload.single('image'),addHistorys);
 
 
 export default router;
