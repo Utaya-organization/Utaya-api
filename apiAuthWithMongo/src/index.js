@@ -4,14 +4,17 @@ import cors from "cors";
 import userRoute from "./routes/userRoute.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import loadModel from "../services/loadModel.js";
 
 
 
 
 const app = express();
 
-
 dotenv.config();
+const model = await loadModel();
+app.locals.model = model;
+
 
 
 
