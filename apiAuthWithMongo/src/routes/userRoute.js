@@ -1,6 +1,6 @@
 import express from "express";
 // import { deleteUsers, getAllUsers, GetUserLogin, LoginUsers, logoutUsers, storeUsers, UpdatePassword } from "../controller/userController.js";
-import { destroyProduct, getSkinType, registerUser, storeProduct, storeSkinType, loginUser, getUserLogin, updatePassword, logoutUser, deleteUser, addHistory, getHistory } from "../controller/skinTypeController.js";
+import { destroyProduct, getSkinType, registerUser, storeProduct, storeSkinType, loginUser, getUserLogin, updatePassword, logoutUser, deleteUser, addHistory, getHistory, addHistorys } from "../controller/skinTypeController.js";
 import { Auth } from "../middleware/auth.js";
 import { refreshToken } from "../controller/refreshToken.js";
 import { isAdmin } from "../middleware/isAdmin.js";
@@ -26,8 +26,8 @@ router.get('/skintype', getSkinType);
 router.post('/skintype', upload.single('file'), storeSkinType);
 router.post('/product', upload.single('file'), storeProduct);
 router.delete('/product/:skinTypeName/:idProduct', destroyProduct);
-// router.post('/predict', upload.single('image'), addHistory);
-router.post('/history/:skinType', Auth,addHistory);
+router.post('/predict', upload.single('image'), addHistorys);
+// router.post('/history/:skinType', Auth,addHistory);
 router.get('/history', Auth, getHistory);
 // router.post('/predict', upload.single('image'),addHistorys);
 

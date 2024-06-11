@@ -495,108 +495,106 @@ export const deleteUser = async (req, res) => {
     }
 }
 
-// export const addHistorys = async (req, res) => {
-//     // const refreshToken = req.cookies.refreshToken;
-//     // if(!refreshToken) return res.sendStatus(403);
+export const addHistorys = async (req, res) => {
+    // const refreshToken = req.cookies.refreshToken;
+    // if(!refreshToken) return res.sendStatus(403);
     
 
-//     const initModel = async () => {
-//         try {
-//             const model = await loadModel();
-//             app.locals.model = model;
+    const initModel = async () => {
+        try {
+            const model = await loadModel();
+            app.locals.model = model;
 
-//             async function predictClassification(model, image) {
-//                 // if (!model || !model.predict) {
-//                 //   throw new Error('Model belum dimuat atau tidak valid');
-//                 // }
-//                 const tensor = tf.node
-//                   .decodeJpeg(image)
-//                   .resizeNearestNeighbor([299, 299])
-//                   .expandDims()
-//                   .toFloat()
-               
-//                 const prediction = model.predict(tensor);
-               
-//                 // const classes = ['kering', 'basah', 'berminyak'];
-               
-//                 // const classResult = tf.argMax(prediction, 1).dataSync()[0];
-//                 // const label = classes[classResult];
-                
-               
-//                 return { prediction };
-//               }
+            const predictClassification = async (model, image) => {
+                const tensor = tf.node
+                    .decodeJpeg(image)
+                    .resizeNearestNeighbor([299, 299]) // ubah ukuran gambar ke [299, 299]
+                    .toFloat() // ubah ke float
+                    .div(tf.scalar(255.0)) // normalisasi gambar
+                    .expandDims(); // tambahkan dimensi batch
+    
+                const prediction = model.predict(tensor);
+                const predictionData = prediction.dataSync(); // Ambil data prediksi sebagai array
+    
+                const classes = ['normal', 'kering', 'berminyak'];
+                const classResult = tf.argMax(prediction, 1).dataSync()[0]; // dapatkan indeks prediksi tertinggi
+                const label = classes[classResult]; // dapatkan label berdasarkan indeks
+    
+                return { prediction: predictionData, label }; // kembalikan hasil prediksi dan label
+            };
 
-//             const image = req.file.buffer;
-//             const {prediction } = await predictClassification(model, image);
-//             console.log(model);
-//             res.json(prediction);
-//             console.log(prediction); return;
+            const image = req.file.buffer;
+            const {prediction, label } = await predictClassification(model, image);
+            console.log('prediksi:', prediction)
+            console.log('label:', label); return
+            res.json(prediction);
+            console.log(prediction); return;
 
-//             try {
-//                 const usersRef = await admin.firestore().collection('users');
-//                 const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+            try {
+                const usersRef = await admin.firestore().collection('users');
+                const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
 
                
-//                 const skinTypeDocRef = await admin.firestore().collection('skinTypes').doc(label).get();
-//                 const recommendations = skinTypeDocRef.data().recommendations;
+                const skinTypeDocRef = await admin.firestore().collection('skinTypes').doc(label).get();
+                const recommendations = skinTypeDocRef.data().recommendations;
               
                
                     
                   
                     
-//                     if (snapshot.empty) {
-//                         res.status(404).json({ message: 'No matching documents.' });
-//                         return;
-//                     }
+                    if (snapshot.empty) {
+                        res.status(404).json({ message: 'No matching documents.' });
+                        return;
+                    }
             
-//                     const user = [];
-//                     snapshot.forEach(doc => {
-//                         user.push({
-//                             id: doc.id,
-//                             username: doc.data().username,
-//                             password: doc.data().password
-//                         });
-//                     });
+                    const user = [];
+                    snapshot.forEach(doc => {
+                        user.push({
+                            id: doc.id,
+                            username: doc.data().username,
+                            password: doc.data().password
+                        });
+                    });
             
-//                     const userName = user[0].username;
+                    const userName = user[0].username;
                   
-//                     const userDocRef = db.collection('users').doc(userName);
-//                      try {
-//                         await userDocRef.update({
-//                             history: admin.firestore.FieldValue.arrayUnion({
-//                                 id: db.collection('users').doc().id,
-//                                 skinType: label,
-//                                 recommendations: recommendations
-//                             })
-//                         });
-//                         res.status(200).json({message: 'success'});
-//                      } catch (error) {
+                    const userDocRef = db.collection('users').doc(userName);
+                     try {
+                        await userDocRef.update({
+                            history: admin.firestore.FieldValue.arrayUnion({
+                                id: db.collection('users').doc().id,
+                                skinType: label,
+                                recommendations: recommendations
+                            })
+                        });
+                        res.status(200).json({message: 'success'});
+                     } catch (error) {
                         
-//                      }
+                     }
                
 
 
-//                 console.log(label)
-//                 return
+                console.log(label)
+                return
                 
                
         
-//             } catch (error) {
+            } catch (error) {
                 
-//             }
-//         } catch (error) {
-//             console.error('Gagal memuat model:', error);
-//         }
-//     };
+            }
+        } catch (error) {
+            console.error('Gagal memuat model:', error);
+        }
+    };
     
-//     initModel();
+    initModel();
 
   
-//     return;
+    return;
    
-//     // const {}
+    // const {}
     
-// }
+}
 
 export const getHistory = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
