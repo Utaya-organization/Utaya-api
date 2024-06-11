@@ -6,6 +6,7 @@ import { Storage } from "@google-cloud/storage";
 import admin from 'firebase-admin';
 import express from "express";
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from '../config/token.js';
+import predictClassification from '../../services/inferenceService.js';
 
 const app = express();
 
@@ -492,14 +493,14 @@ export const deleteUser = async (req, res) => {
 }
 
 export const addHistorys = async (req, res) => {
-    // const refreshToken = req.cookies.refreshToken;
-    // if(!refreshToken) return res.sendStatus(403);
+    const refreshToken = req.cookies.refreshToken;
+    if(!refreshToken) return res.sendStatus(403);
     try {
+
         const image = req.file.buffer;
-        const model = app.locals.model
-        console.log(app.locals.model); return
-        const {prediction, label } = await predictClassification(model, image);
-        console.log('prediksi:', prediction, label);
+        const model = req.app.locals.model;
+        const {prediction, highestPrediction, label } = await predictClassification(model, image);
+
         const usersRef = await admin.firestore().collection('users');
         const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
 
@@ -529,6 +530,7 @@ export const addHistorys = async (req, res) => {
                     history: admin.firestore.FieldValue.arrayUnion({
                         id: db.collection('users').doc().id,
                         skinType: label,
+                        skinTpypePercentation: highestPrediction,
                         recommendations: recommendations
                     })
                 });
@@ -539,13 +541,13 @@ export const addHistorys = async (req, res) => {
        
 
 
-        console.log(label)
+        
         return
         
        
 
     } catch (error) {
-        
+        console.log(error);
     }
 
    
