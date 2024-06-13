@@ -44,3 +44,34 @@ Authorization : Bearer token
 get "/history" untuk mendapatkan history user
 headers : 
 Authorization : Bearer token
+
+get "/skintypes" untuk mendapatkan produk dengan pengelompokan jenis kulit
+headers : 
+Authorization : Bearer token
+
+route admin
+post "/skintype" menambahkan jenis kulit serta produk
+headers : 
+Authorization : Bearer token
+{
+    "skinType": "",
+    "productName": "",
+    "file": (file gambar),
+    "urlArticle": "",
+    "urlProduct": ""
+}
+
+post "/product" menambahkan produk di skintype tertentu
+headers : 
+Authorization : Bearer token
+{
+    "skinType": "",
+    "productName": "",
+    "file": (file gambar),
+    "urlArticle": "",
+    "urlProduct": ""
+}
+
+delete "/product/:skinTypeName/:idProduct"
+headers : 
+Authorization : Bearer token
