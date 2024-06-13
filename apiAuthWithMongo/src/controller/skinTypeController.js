@@ -513,72 +513,101 @@ export const deleteUser = async (req, res) => {
 
 export const addHistorys = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
-    if(!refreshToken) return res.sendStatus(403);
-    try {
+if (!refreshToken) return res.sendStatus(403);
 
-        const image = req.file.buffer;
-        const model = req.app.locals.model;
-        const {prediction, highestPrediction, label } = await predictClassification(model, image);
+try {
+    const image = req.file.buffer;
+    const file = req.file;
+    const model = req.app.locals.model;
 
-        const usersRef = await admin.firestore().collection('users');
-        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+    if (!file) {
+        return res.status(400).send('No file uploaded');
+    }
 
-       
-        const skinTypeDocRef = await admin.firestore().collection('skinTypes').doc(label).get();
-        const recommendations = skinTypeDocRef.data().recommendations;
-      
-         if (snapshot.empty) {
-                res.status(404).json({ message: 'No matching documents.' });
-                return;
+    const folderName = 'img-predict';
+    const fileName = `${folderName}/${Date.now()}-${file.originalname}`;
+
+    // Convert this to blob
+    const blob = bucket.file(fileName);
+    const blobstream = blob.createWriteStream({
+        metadata: {
+            contentType: file.mimetype,
+        },
+    });
+
+    blobstream.on('error', (err) => {
+        console.error('Blob stream error:', err);
+        return res.status(500).send('File upload error');
+    });
+
+    blobstream.on('finish', async () => {
+        try {
+            // Construct the public URL
+            const imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+            // Make prediction
+            const { highestPrediction, label } = await predictClassification(model, image);
+
+            // Retrieve user based on refresh token
+            const usersRef = admin.firestore().collection('users');
+            const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+            if (snapshot.empty) {
+                return res.status(404).json({ message: 'No matching documents.' });
             }
-    
+
+            const skinTypeDocRef = await admin.firestore().collection('skinTypes').doc(label).get();
+            const recommendations = skinTypeDocRef.data().recommendations;
+
             const user = [];
             snapshot.forEach(doc => {
                 user.push({
                     id: doc.id,
                     username: doc.data().username,
-                    password: doc.data().password
+                    password: doc.data().password,
                 });
             });
-    
+
             const userName = user[0].username;
-          
-            const userDocRef = db.collection('users').doc(userName);
-             try {
-                await userDocRef.update({
-                    history: admin.firestore.FieldValue.arrayUnion({
-                        id: db.collection('users').doc().id,
-                        skinType: label,
-                        skinTpypePercentation: highestPrediction,
-                        recommendations: recommendations
-                    })
-                });
-                res.status(200).json({message: 'success',
+            const userDocRef = admin.firestore().collection('users').doc(userName);
+
+            await userDocRef.update({
+                history: admin.firestore.FieldValue.arrayUnion({
+                    id: admin.firestore().collection('users').doc().id,
+                    urlImage: imageUrl,
                     skinType: label,
-                    skinTpypePercentation: highestPrediction,
-                    recommendations: recommendations
-                });
-             } catch (error) {
-                
-             }
-       
+                    skinTypePercentage: highestPrediction,
+                    recommendations: recommendations,
+                }),
+            });
+
+            res.status(200).json({
+                urlImage: imageUrl,
+                skinType: label,
+                skinTypePercentage: highestPrediction,
+                recommendations: recommendations,
+            });
+        } catch (error) {
+            console.error('Prediction or Firestore error:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+    blobstream.end(file.buffer);
+} catch (error) {
+    console.error('Unexpected error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+}
 
 
-        
-        return
-        
-       
+      
 
-    } catch (error) {
-        console.log(error);
-    }
 
-   
-    
-    
-   
+
+
+
     // const {}
-    
+
 }
 
 export const getHistory = async (req, res) => {
@@ -613,6 +642,54 @@ export const getHistory = async (req, res) => {
         console.log(error)
     }
 }
+
+export const getHistoryById = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.sendStatus(403);
+
+    const historyId = req.params.historyId;
+    if (!historyId) return res.status(400).json({ message: 'History ID is required.' });
+
+    try {
+        const usersRef = await admin.firestore().collection('users');
+        const snapshot = await usersRef.where('refreshToken', '==', refreshToken).get();
+
+        if (snapshot.empty) {
+            return res.status(404).json({ message: 'No matching documents.' });
+        }
+
+        const user = [];
+        snapshot.forEach(doc => {
+            user.push({
+                id: doc.id,
+                username: doc.data().username
+            });
+        });
+
+        const userDocRef = await admin.firestore().collection('users').doc(user[0].id).get();
+        if (!userDocRef.exists) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const historyArray = userDocRef.data().history;
+        if (!historyArray) {
+            return res.status(404).json({ message: 'No history found for this user.' });
+        }
+
+        const historyItem = historyArray.find(history => history.id === historyId);
+        if (!historyItem) {
+            return res.status(404).json({ message: 'History item not found.' });
+        }
+
+        res.status(200).json({ history: historyItem });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+}
+
+
 
 export const addHistory = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
