@@ -22,6 +22,25 @@ const bucket = storage.bucket(bucketName)
 
 const db = new Firestore();
 
+export const isAdmin = async (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if(token == null) return res.sendStatus(401);
+    jwt.verify(token, ACCESS_TOKEN_SECRET, async (err, decoded) => {
+        if(err) return res.sendStatus(403);
+        req.userName = decoded.userName;
+        const userName = decoded.userName;
+        
+        const userCollection = db.collection('users');
+        // const userDocRef = userCollection.doc(userName);
+        const user = await admin.firestore().collection('users').doc(userName).get();
+        const isAdmin = user.data().isAdmin;
+        if(!isAdmin) return res.sendStatus(403);
+        next();
+        
+    })
+}
+
 
 export const getSkinType = async (req, res) => {
 
@@ -534,7 +553,11 @@ export const addHistorys = async (req, res) => {
                         recommendations: recommendations
                     })
                 });
-                res.status(200).json({message: 'success'});
+                res.status(200).json({message: 'success',
+                    skinType: label,
+                    skinTpypePercentation: highestPrediction,
+                    recommendations: recommendations
+                });
              } catch (error) {
                 
              }
