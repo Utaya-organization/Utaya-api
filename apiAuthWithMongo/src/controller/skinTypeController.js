@@ -371,7 +371,12 @@ export const loginUser = async (req, res) => {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000
         });
-        res.json({accessToken});
+        res.status(200).json({
+            message: "success",
+            data: {
+                username: username,
+                token: accessToken
+            }});
     } catch (error) {
         console.log(error);
     }
