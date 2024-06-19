@@ -338,7 +338,11 @@ export const registerUser = async (req, res) => {
             deletedAt,
             history: {}
         });
-        res.sendStatus(201);
+        res.status(201).json({
+            message: "User created",
+            data: {
+                username: username,
+            }});
     } catch (error) {
         console.log(error);
     }
@@ -357,10 +361,10 @@ export const loginUser = async (req, res) => {
 
     const userName = user.data().username;
     const accessToken = jwt.sign({userName}, ACCESS_TOKEN_SECRET, {
-        expiresIn: '1d'
+        expiresIn: '14d'
     });
     const refreshToken = jwt.sign({userName}, REFRESH_TOKEN_SECRET,{
-        expiresIn: '1d'
+        expiresIn: '14d'
     });
     const userDocRef = db.collection('users').doc(username);
     try {
@@ -369,7 +373,7 @@ export const loginUser = async (req, res) => {
         });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000
+            maxAge: 14 * 24 * 60 * 60 * 1000
         });
         res.status(200).json({
             message: "success",
