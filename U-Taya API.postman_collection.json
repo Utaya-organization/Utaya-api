@@ -1,0 +1,196 @@
+{
+	"info": {
+		"_postman_id": "9e109197-f3b4-4b23-b023-f478786650c4",
+		"name": "U-Taya API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25200403"
+	},
+	"item": [
+		{
+			"name": "post product",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"skinType\": \"berminyak\", \n    \"productName\": \"kahf2aja\", \n    \"urlArticle\": \"urlski1n\",\n    \"urlImage\": \"url3\",\n    \"urlProduct\": \"122333\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/product",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"product"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "post skintype",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "skinType",
+							"value": "basah",
+							"type": "text"
+						},
+						{
+							"key": "productName",
+							"value": "pondss",
+							"type": "text"
+						},
+						{
+							"key": "image",
+							"type": "file",
+							"src": "/Users/valentputra/Downloads/data-test-submissions/cancer-3.png"
+						},
+						{
+							"key": "urlArticle",
+							"value": "asdkjasds",
+							"type": "text"
+						},
+						{
+							"key": "urlProduct",
+							"value": "sadass",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/skintype",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"skintype"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get skintype",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "delete product",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "register",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"adminganteng\",\n    \"password\": \"wisnuadminganteng\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://backend-utaya-n4d5yc5fnq-et.a.run.app/login",
+					"protocol": "https",
+					"host": [
+						"backend-utaya-n4d5yc5fnq-et",
+						"a",
+						"run",
+						"app"
+					],
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getusers",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "gethistory",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "gethistorybyid",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "change password",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "logout",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "predikmodal",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}

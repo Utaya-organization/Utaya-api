@@ -45,7 +45,7 @@ get "/history" untuk mendapatkan history user
 headers : 
 Authorization : Bearer token
 
-get "/skintypes" untuk mendapatkan produk dengan pengelompokan jenis kulit
+get "/skintype" untuk mendapatkan produk dengan pengelompokan jenis kulit
 headers : 
 Authorization : Bearer token
 
