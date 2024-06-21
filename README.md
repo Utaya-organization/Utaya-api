@@ -1,4 +1,14 @@
 # Utaya
+
+To install and run the Utaya application, follow these steps:
+1. Clone the repository using the command `https://github.com/Utaya-organization/Utaya-api.git`
+2. cd utaya, cd Utaya-api
+3. npm install
+4. npm start
+
+
+
+Endpoint
 post "/users" untuk register user
 {
     "username": "",
